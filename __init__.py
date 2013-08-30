@@ -3,6 +3,7 @@
 import calendar
 import datetime
 from itertools import chain
+from random import shuffle
 
 import random
 
@@ -81,8 +82,6 @@ class Events:
         sample_size = min( len( self.events ), len( dates ) )
         events_sample = sample( self.events, sample_size )
 
-        print sample_size
-
         for d in dates:
             if len( events_sample ):
                 mapping[d] = events_sample.pop()
@@ -90,6 +89,42 @@ class Events:
                 break
 
         return mapping
+
+    def iterator(self, terminate_after ):
+        return self.EventIterator( self, terminate_after )
+
+    class EventIterator:
+        def __init__(self, events, terminate_after):
+            self.events = [e for e in events if e.confirmed]
+
+            print len( self.events )
+            shuffle( self.events )
+
+
+            self.iteration_counter = 0
+            self.terminate_after = terminate_after
+
+        def next( self ):
+
+            if self.iteration_counter > self.terminate_after:
+                return None
+
+            current_index = ( self.iteration_counter % len( self.events ) )
+
+            if current_index == 0:
+                shuffle( self.events )
+                print "wraparound"
+
+            self.iteration_counter += 1
+
+            return self.events[current_index]
+
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
@@ -111,23 +146,23 @@ if __name__ == "__main__":
             quantity=3
         ),
 
-        Foredrag(
+        unconfirmed( Foredrag(
             subject="Smarte klær",
             person=persons['Kristin Sunde'],
             quantity=1
-        ),
+        )),
 
-        Foredrag(
+        unconfirmed( Foredrag(
             subject="Produksjon av smarte klær",
             person=persons['Kristin Sunde'],
             quantity=1
-        ),
+        )),
 
-        Foredrag(
+        unconfirmed( Foredrag(
             subject="Python, a partner in crime",
             person=persons['Ilya Kostolomov'],
             quantity=1
-        ),
+        )),
 
         Verksted(
             subject="Unix basics på Raspberry Pi",
@@ -147,17 +182,17 @@ if __name__ == "__main__":
             quantity=2
         ),
 
-        unconfirmed( Verksted(
+        Verksted(
             subject="Java med Processing",
             person=persons['Emil Hatleid', 'Persijn Kwekkebom'],
             quantity=3,
-        )),
+        ),
 
-        unconfirmed( Foredrag(
+        Foredrag(
             subject="Redd verden",
-            person=persons['Kine Gjerstad Eide'],
+            person=persons['Kine Gjerstad Eide', 'Peter Havgar'],
             quantity=1,
-        )),
+        ),
 
         unconfirmed( Verksted(
             subject="C++",
@@ -173,7 +208,7 @@ if __name__ == "__main__":
 
         unconfirmed( Verksted(
             subject="Arduino for vitenskapelige anvendelser",
-            person=persons['Ilya Kostolomov', 'Peter Havgar', 'Roger Antonsen', 'Andreas Nakkerud'],
+            person=persons['Ilya Kostolomov', 'Peter Havgar', 'x Roger Antonsen', 'x Andreas Nakkerud'],
             quantity=3,
         ))
 
@@ -192,8 +227,8 @@ if __name__ == "__main__":
 
     #
 
-    start_date = datetime.date( 2013, 9, 1 )
-    end_date = datetime.date( 2013, 12, 19 )
+    start_date = datetime.date( 2013, 9, 15 )
+    end_date = datetime.date( 2013, 11, 25 )
 
     days = {
         'mandag':   1,
@@ -205,25 +240,34 @@ if __name__ == "__main__":
         'søndag':   7
     }
 
+    valid_days = [ days['torsdag'], days['onsdag'] ]
 
     #
 
-    thursdays = []
+    dates = []
+
+
 
     for i in sorted(set(period)):
-        if i.isoweekday() == days['torsdag']:
+        if i.isoweekday() in valid_days:
             # limit by start and end dates
             if start_date <= i < end_date:
-                thursdays.append( i )
+                dates.append( i )
 
 
     # assign dates to different suggestions
     # expand and flatten suggestions
 
-    event_plan = sorted( events.distribute( thursdays ).iteritems(), key=lambda d: d[0] )
+    # event_plan = sorted( events.distribute( thursdays ).iteritems(), key=lambda d: d[0] )
 
-    for d,e in event_plan:
-        print d,e.subject
+    cl = events.iterator( 100 )
+
+    print "Number of events: ", len( events )
+
+    for n,e in enumerate(dates):
+        current_event = cl.next()
+
+        print n, e, current_event.subject
 
 
 
